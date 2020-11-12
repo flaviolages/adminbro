@@ -1,10 +1,8 @@
 
-const AdminBro = require("admin-bro");
-const AdminBroExpress = require("@admin-bro/express");
-
-
-
+//DATABASE
 const mongoose = require("mongoose");
+
+
 const ProjectSchema = new mongoose.Schema({
     title: {
         type:String,
@@ -15,22 +13,45 @@ const ProjectSchema = new mongoose.Schema({
     created_at: {type: Date, default: Date.now },
 });
 
-const Project = mongoose.model("Project", ProjectSchema);
+const Project = mongoose.model("Project", ProjectSchema); 
 
 
 
-const adminBro = new AdminBro({
-    databases: [],
-    rootPath: " /admin",
+//ADMIN BRO
+const AdminBro = require("admin-bro");
+const AdminBroExpress = require("@admin-bro/express");
+const AdminBroMongoose = require("@admin-bro/mongoose");
+
+//Use mongoose no AdmimBro
+AdminBro.registerAdapter(AdminBroMongoose);
+
+
+//Config
+const adminBroOptions = new AdminBro({
+    databases: [Project],
+    rootPath: "/admin",
 });
 
+const router = AdminBroExpress.buildRouter(adminBroOptions);
 
-const router = AdminBroExpress.buildRouter(adminBro);
 
+
+//SERVER
 const express = require("express");
 const server = express();
 
 server
-.use(adminBro.options.rootPath, router)
-.listen(5500, ()=> console.log("Server started"));
+.use(adminBro.options.rootPath, router);
 
+//Run App - (Espera conexão com danco de dados para depois iniciar)
+const rum = async () => {
+    await mongoose.connect("mongodb://localhost/adminbroapp", {
+        useNewUrlParser: true,
+        useUnifiedTopology: true
+    });
+
+    await server.listen(5500, () => console.log("Server started"));
+
+};
+
+run(); 
